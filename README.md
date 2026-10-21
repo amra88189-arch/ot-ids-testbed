@@ -94,8 +94,3 @@ score the detector's full layer-model + fusion pipeline import CATF-IDS (paper i
 prep) and are not in this repo. Requirements: Python 3.10+, pandas, numpy,
 matplotlib; Docker (for Zeek); a GRFICSv3 instance.
 
-## Caveats (stated, not hidden)
-
-- One recording → no cross-instance generalisation numbers yet; the matched-control repeat-capture (each attack at two separate times) is the next session.
-- The host-load was recorded after the session and time-aligned for the whole-system run.
-- A TON_IoT-trained detector floods at the plant (FPR ≈ 0.99) — the negative control that motivates per-environment baselining.
