@@ -321,6 +321,13 @@ including the compromised-source case — is Session A's, not Session B's.
 
 ## 5a. Operator agent — a KB-grounded assistant, and what the KB is worth
 
+**The LLM is never in the detection or control loop.** Detection is performed entirely by
+the deterministic, frozen per-layer detectors (sections 2–2d); the agent only reads the
+alerts they raise and explains them, and it is read-only on the plant and propose-only on
+config. This separation is deliberate: a non-deterministic model (the LLM-judge below puts a
+local 7B at ~45% factual reliability even when grounded) must never make the catch-or-miss
+decision on a safety-critical process. The detectors catch; the agent narrates and proposes.
+
 A retrieval-grounded, human-in-the-loop assistant over the frozen baselines, built to be
 *deployable* rather than closed on the simulation: a local model (Qwen2.5-7B in Ollama,
 fully air-gapped on the SOC-side host) plus a flat-file knowledge base. The KB holds the

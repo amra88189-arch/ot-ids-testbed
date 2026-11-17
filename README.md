@@ -70,6 +70,12 @@ epistemic tiers (demonstrated / attribution / analytical), and the honest limita
 
 ## The operator agent + console
 
+> **The LLM is never in the detection or control loop.** Detection is done entirely by the
+> deterministic, frozen per-layer detectors; the agent only *reads* the alerts they raise and
+> *explains* them. This is deliberate — a non-deterministic model (a local 7B is ~45 %
+> reliable on facts here) should never make the catch-or-miss decision on a safety-critical
+> plant. The detectors catch; the agent narrates.
+
 A local, **air-gapped** assistant (Qwen2.5 via Ollama) over a flat-file knowledge base of
 frozen plant facts, detector rationale, **MITRE ATT&CK for ICS** mappings, and a **live CISA
 KEV** CVE feed filtered to the plant's assets. It is **read-only on the plant and
