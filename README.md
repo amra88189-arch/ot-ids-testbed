@@ -13,7 +13,7 @@ mislead, not hide them.
 > then let a local, read-only agent explain the alerts in the language of MITRE ATT&CK for
 > ICS and live CVEs.
 
-![CATF-IDS operator console — live view during a manual-mode attack: MODE flipped to MANUAL, reactor pressure held at 2704 kPa, per-layer counters, and the live process-device panel](docs/img/console-live.png)
+
 
 <img width="928" height="605" alt="console-live" src="https://github.com/user-attachments/assets/54de481d-7e5f-4aa0-a727-f715360569b1" />
 
