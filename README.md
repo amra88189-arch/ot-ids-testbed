@@ -15,7 +15,12 @@ mislead, not hide them.
 
 ![CATF-IDS operator console — live view during a manual-mode attack: MODE flipped to MANUAL, reactor pressure held at 2704 kPa, per-layer counters, and the live process-device panel](docs/img/console-live.png)
 
-*The operator console during a live subtle-attack: the attacker has flipped the PLC to MANUAL and is holding pressure at 2704 kPa (inside the band) — caught across layers and shown in real time. (`docs/console_demo.html` is a standalone, backend-free preview of this view.)*
+<img width="928" height="605" alt="console-live" src="https://github.com/user-attachments/assets/54de481d-7e5f-4aa0-a727-f715360569b1" />
+
+
+AGENT : <img width="882" height="286" alt="Screenshot 2026-11-18 010729" src="https://github.com/user-attachments/assets/96fa81a7-db48-4cbe-b232-5d56849c0bd5" />
+
+
 
 ---
 
