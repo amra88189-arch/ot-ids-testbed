@@ -1,96 +1,142 @@
-# Multi-modal intrusion detection on a live OT/ICS testbed
+# CATF-IDS — a four-layer, frozen-baseline intrusion detection stack for ICS, with a KB-grounded operator agent
 
-![OT IDS testbed](./thumbnail.png)
+A defensive intrusion-detection system for an industrial control system (a live GRFICSv3
+chemical-process testbed — a Tennessee-Eastman-style reactor with a soft PLC, Modbus
+field devices, an HMI, a routed DMZ↔ICS network, and attacker hosts). It pairs a frozen,
+physics-aware detector with an air-gapped, KB-grounded LLM operator agent — and it is
+evaluated with deliberate intellectual honesty: every headline number is a run on the live
+testbed, and the methodology is designed to *surface* the ways ICS IDS evaluations usually
+mislead, not hide them.
 
-What happens when you take a multi-modal IIoT intrusion-detection system off its
-benchmark and run it on a **real industrial process**? This repo is that
-experiment: a live OT testbed, a recorded multi-stream attack session, and a set
-of detection findings that only hold up once you evaluate the way you *deploy* —
-train on the past, test on the future.
-
-Built on **CATF-IDS**, a multi-modal IDS (network + device-physics + host).
-*Paper in preparation — the core pipeline is not included here; this repo is the
-testbed, the OT-specific extensions, and the findings.*
+> **One-line thesis:** learn *normal* once, freeze it, and alert on deviation at four
+> independent layers — so novel attacks are caught *because* you never trained on attacks —
+> then let a local, read-only agent explain the alerts in the language of MITRE ATT&CK for
+> ICS and live CVEs.
 
 ---
 
-## The testbed
+## Why this exists
 
-[GRFICSv3](https://github.com/Fortiphyd/GRFICSv3) in Docker — a Tennessee-Eastman
-style chemical plant with a real soft-PLC (OpenPLC), a 3-D physics simulation with
-six remote-I/O devices, a ScadaLTS HMI, a routed DMZ↔ICS network, and attacker
-hosts. Three streams were recorded on one clock and converted to the detector's
-schema:
+Most ICS IDS results look great on a benchmark and fall apart in deployment. This project
+starts from that failure and builds around it:
 
-| stream | source | rate |
-|---|---|---|
-| network | Zeek `conn` + `modbus` over self-healing PLC and router taps | per-flow |
-| device | physics engine, 6 devices × (primary, secondary) signals | 1 Hz |
-| host | `atop` process accounting | per-sample |
+- A supervised fusion scores **F1 0.996** under random cross-validation — and **injection
+  recall collapses from 0.76 → 0.00** under a temporal (train-past / test-future) split.
+  The headline number was a time-leakage artefact.
+- A baseline *fit on incoming data* **inverts under attack** (network-flow AUC **0.154 vs
+  0.973 frozen**): when attacks dominate the window, the "baseline" becomes the attack.
+- A detector trained on a public benchmark (TON_IoT) **floods at the plant (FPR ≈ 0.99)** —
+  the negative control that motivates per-environment baselining.
 
-Attacks recorded: network **scan**, **Modbus command-injection**, **host
-resource-load**, and a benign **noise-floor fault** that drove a **sustained
-process upset** (tank pressure 2697 → 1733 kPa, held ~35 min).
+So CATF-IDS freezes each layer's notion of normal on clean data and never rebuilds it from
+live traffic.
 
-## Findings
+## The four layers (all live on one alert bus)
 
-**1. Random cross-validation flatters a single recording — evaluate temporally.**
-The full pipeline scored **F1 0.996** under shuffled 5-fold CV. Re-scored as a
-deployed detector sees data (train past → test future), the aggregate fell to
-~0.90 and the per-class story changed:
+| layer | question | signal | detectors |
+|---|---|---|---|
+| **L3 · command / network** | *who touched the PLC, was it allowed?* | Modbus writes | out-of-vocabulary `(src, func, register)` |
+| **L1 · process safety** | *is the plant physically safe?* | pressure, level | static value band + **CUSUM** |
+| **L2 · control integrity** | *is the process being manipulated?* | feed/outlet valves, mode | **variance-collapse** + **EMD** |
+| **L4 · fusion / threat** | *what's the verdict?* | — | KB-grounded agent: ATT&CK mapping + live CVE feed |
 
-| split | scan recall | injection recall |
-|---|---|---|
-| random CV | 1.00 | **0.76** |
-| temporal (past→future) | 1.00 | **0.00** |
+An attack propagates *down* the stack — unauthorized write → manual-mode flip → pinned
+valves → pressure excursion — and each layer catches it at a different stage.
 
-The injection score was a shuffling artefact. A supervised detector catches attack
-*types it has seen* and misses *novel* ones.
+## Headline results (all demonstrated on the live testbed)
 
-**2. A frozen, unsupervised baseline on every layer** — learn only *normal*,
-freeze it, alert on deviation per layer. Catches attacks it was never trained on:
+- **Modbus command injection:** 10/10 flagged, **0 false positives of 4,476** normal writes —
+  and now a **live** streaming detector, flagging the attacker's writes by source IP in real time.
+- **Subtle in-band attack (the hard case):** pressure held at 2704 kPa *inside* the band for
+  5 min; the static band fired **0**, **CUSUM fired 58**. Verified with Modbus coil-0 read-back.
+- **PASAD baseline:** against the field-standard stealth detector (Aoudi et al., CCS 2018) on
+  the same recording, **CUSUM matches the best PASAD config** (93.3 % detection, 11 s
+  first-alarm, 0 false positives) — honestly scoped: PASAD's edge is for cyclic/structured
+  signals, which this steady-signal bias doesn't exercise.
+- **Per-layer detection latency:** L3 command **+1.4 s**, L1 CUSUM **+14.3 s**, L2 EMD +28 s,
+  band +69 s, variance-collapse +111 s — the network layer sees the intrusion **13–110 s
+  before** the physical consequence appears.
+- **Prevention (inline command firewall):** blocks **6/6** varied, *novel* unauthorized writes
+  (distinct from the known attack) while passing all legitimate reads, process undisturbed.
+- **Detection catches what prevention can't:** a field-device bypass scored **command 0 /
+  physics 108** — proving the layers cover different failure modes (compromised source,
+  field-direct write, physical fault).
+- **KB-grounded agent (LLM-judged):** grounding lifts a local 7B from **0/20 → 9/20** (bare
+  cannot answer a single plant-specific or live-CVE question); 3B 1/20 → 4/20. A keyword
+  metric *over-credited* the bare model via hallucinations — reported honestly.
 
-![architecture](./architecture.png)
+See **[docs/TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md)** for the full write-up, the
+epistemic tiers (demonstrated / attribution / analytical), and the honest limitations.
 
-| layer | frozen baseline | result |
-|---|---|---|
-| network — flow | connection / fan-out bands | scan, AUC 0.98 |
-| network — command | normal Modbus `(src, func, register)` vocabulary | injection + compromised-source, **10/10, 0 FP** |
-| device — physics | per-device operating envelope | sustained drift, **AUC 0.97** |
-| host | aggregate resource bands | resource-load, AUC 0.999 |
+## The operator agent + console
 
-**3. The physical layer needs an operating envelope, not a rate-of-change feature.**
-A slow sustained excursion has almost no rate of change, so `phys_delta` ranks it
-below normal noise (AUC 0.31). A frozen, device-nature-aware envelope catches 94%
-of the event where the derivative catches ~0%:
+A local, **air-gapped** assistant (Qwen2.5 via Ollama) over a flat-file knowledge base of
+frozen plant facts, detector rationale, **MITRE ATT&CK for ICS** mappings, and a **live CISA
+KEV** CVE feed filtered to the plant's assets. It is **read-only on the plant and
+propose-only on config** — a threshold change is emitted as a validated `git` diff for a
+human to approve, rejected if it crosses an immutable hard-limit. A single-page **operator
+console** (`agent/console.html` + `agent/serve_console.py`) tails the live bus, shows the
+four layers and the live PLC panel, and runs the agent with its tool-trace and fact-chips.
 
-![sustained drift](./drift_detection_li.png)
+## Repository layout
 
-**4. OT needs protocol semantics.** An unauthorised Modbus write is protocol-valid
-and invisible to a bytes-and-packets baseline. Capturing the command
-(`modbus_detail.zeek` → `mb_func`/`mb_reg`/`mb_val`) and freezing the normal
-command vocabulary catches the injection **10/10 with zero false positives** — and
-also the harder *compromised-source* case (a legitimate PLC issuing an abnormal
-command). See [`FINDINGS.md`](./FINDINGS.md) for the full write-up.
+```
+detector/   the frozen multi-detector physics IDS (ids.py + baselines.json)
+network/    Layer 3: Modbus command-vocabulary sniffer, inline firewall, red-team probe,
+            field-bypass attack, and the live state/alert bridges
+agent/      the KB-grounded operator agent, retriever, knowledge base, LLM-judge benchmark,
+            and the operator console (backend + single-page UI)
+analysis/   offline evaluations (PASAD vs CUSUM)
+attacks/    the subtle-hold attacker regulator (coil-0 verified in-band manipulation)
+docs/       the technical report and the UI design brief
+testbed/    notes for the GRFICSv3 lab-side scripts (added from your VM)
+```
 
-## Repo map
+Each directory has its own README. Start with **[docs/TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md)**.
 
-| file | what it does |
-|---|---|
-| `extract.sh`, `modbus_detail.zeek` | Zeek over the pcaps (incl. Modbus command semantics) + atop dumps |
-| `lab_convert.py` | the three streams → the detector's CSV schema |
-| `make_labels.py`, `mark.sh` | attack-window labelling (marks + self-labelling fault fields) |
-| `phys_envelope.py` | the device-nature-aware frozen physical envelope (standalone) |
-| `net_command_baseline.py` | the frozen Modbus command-vocabulary baseline (standalone) |
-| `shot_list.md`, `runsheet_2h.md` | the attack-session design |
-| `FINDINGS.md` | the full research record, honestly scoped |
+## Quick start
 
-## Reproduce
+**Detector (replay / live), stdlib only:**
+```bash
+python3 detector/ids.py --freeze CLEAN.jsonl            # learn + freeze normal
+python3 detector/ids.py --replay SESSION.jsonl          # score a recording
+python3 detector/ids.py --device-dir ~/catf-lab/device  # live tail -> alerts.jsonl
+```
 
-The capture/convert tooling and the two frozen baselines (`extract.sh`,
-`modbus_detail.zeek`, `lab_convert.py`, `phys_envelope.py`,
-`net_command_baseline.py`) are self-contained Python/Zeek/atop. The harnesses that
-score the detector's full layer-model + fusion pipeline import CATF-IDS (paper in
-prep) and are not in this repo. Requirements: Python 3.10+, pandas, numpy,
-matplotlib; Docker (for Zeek); a GRFICSv3 instance.
+**Agent (local, needs Ollama + a Qwen2.5 model):**
+```bash
+python agent/agent.py "which ATT&CK technique is the Modbus injection?"   # KB-grounded
+python agent/serve_console.py --model qwen2.5:7b                           # console at :8750
+```
 
+**Live command layer (passive detect, then optional inline enforce) in the PLC netns:**
+```bash
+sudo nsenter -t <plc-pid> -n python3 network/modbus_sniff.py --learn 120   # freeze write vocab
+sudo nsenter -t <plc-pid> -n python3 network/modbus_sniff.py --detect       # stream alerts
+sudo nsenter -t <plc-pid> -n python3 network/modbus_firewall.py             # block out-of-vocab
+```
+
+## Honesty notes (read these)
+
+- **One simulated instance.** "Live OT" means a live ICS *simulation*, not field hardware;
+  no cross-instance generalisation is claimed.
+- **Metrics are reported with their biases.** The agent's keyword score is shown only to
+  demonstrate that it over-credits hallucinations; the LLM-judge number is the one that counts.
+- **The small local agent is imperfect even when grounded** (7B ≈ 45 %): it fails via refusals,
+  wrong-fact retrieval, and muddled synthesis. Grounding is decisive but not magic.
+- **Prevention is scoped.** On this plant nothing legitimately writes *to* the PLC, so "block
+  any inbound write" is trivially safe here; a plant with operator setpoint writes must include
+  those in the fair test.
+
+## Related work
+
+Positioned against **PASAD** (process-aware stealth detection; we baseline against it directly),
+**KIDS** (ARES 2025, process monitoring + threat intelligence; closest neighbour — our
+differentiator is the LLM-agent fusion and live CVE feed), the **Reality-Gap taxonomy** (MAKE
+2026, operating-point/temporal shift), and the **SoK on ICS IDS evaluation** (which backs the
+CV-mirage and benchmark-transfer findings). The read-only / propose-only agent design follows
+the emerging best practice (OWASP GenAI 2026 "Excessive Agency"; "Parallax").
+
+## License
+
+MIT — see [LICENSE](LICENSE).

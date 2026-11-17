@@ -1,0 +1,7 @@
+{
+  "generated": "pending-first-refresh",
+  "note": "Run refresh.py on the SOC host (internet) to populate from CISA KEV + CSAF.",
+  "sources": [],
+  "asset_keywords": ["openplc", "modbus", "scadabr"],
+  "cves": []
+}

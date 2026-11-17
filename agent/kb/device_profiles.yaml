@@ -1,0 +1,27 @@
+# device_profiles.yaml — frozen per-device profiles from a verified clean-normal
+# run (GRFICSv3, live plant, 10 min, 1 Hz, 599 samples/device). Observed facts;
+# the envelope POLICY (how these bands fire) lives in guards.yaml.
+#
+#   nature: steady  -> value-band envelope (fire at fire_sigma*sd; or a tolerance
+#                      floor when the signal is effectively constant, sd~0)
+#           cycling -> variance-collapse (stuck) + out-of-range envelope
+#
+devices:
+  tank:                       # T-101 pressure vessel — the drift event lived here
+    primary:   {signal: pressure,          nature: steady,  band: [2693, 2702]}   # ~2698; drift to 1733 is ~960 below band
+    secondary: {signal: liquid_level,      nature: steady,  band: [43.87, 44.14]}
+  feed1:
+    primary:   {signal: f1_flow,           nature: steady,  band: [640.5, 640.5], constant: true}  # flow-controlled setpoint
+    secondary: {signal: f1_valve_pos,      nature: steady,  band: [100, 100],     constant: true}  # pinned open
+  feed2:
+    primary:   {signal: f2_flow,           nature: steady,  band: [0, 0], idle: true}   # off in normal; activation = declared mode or anomaly
+    secondary: {signal: f2_valve_pos,      nature: steady,  band: [0, 0], idle: true}
+  product:
+    primary:   {signal: product_flow,      nature: cycling, cv: 0.67, band: [8, 213]}
+    secondary: {signal: product_valve_pos, nature: cycling, cv: 0.67, band: [4, 100]}
+  purge:
+    primary:   {signal: purge_flow,        nature: cycling, cv: 1.42, band: [0, 1794]}
+    secondary: {signal: purge_valve_pos,   nature: cycling, cv: 1.42, band: [0, 100]}
+  analyzer:
+    primary:   {signal: A_in_purge,        nature: steady,  band: [0.4762, 0.4765], constant: true}  # slow-reporting, forward-filled
+    secondary: {signal: C_in_purge,        nature: steady,  band: [0.4971, 0.5064]}

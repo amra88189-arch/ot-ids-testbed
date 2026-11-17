@@ -1,0 +1,16 @@
+# hard_limits.yaml -- IMMUTABLE. The agent tunes guards.yaml WITHIN these and
+# can never cross them. Validated on every proposed change before a human sees it.
+physics:
+  fire_sigma:        {min: 2.0, max: 6.0}   # can't blind the value band by raising sigma unbounded
+  window:            {min: 60,  max: 300}   # must span >=1 full cycle, but not so long it hides fast events
+  cusum_h_sigma:     {min: 4.0, max: 12.0}  # CUSUM can't be desensitised past this
+  varcollapse_ratio: {min: 0.10, max: 0.50} # stuck-valve detector can't be blinded toward 0 or made trigger-happy
+  emd_margin:        {min: 1.1, max: 2.0}   # distribution-shift ceiling margin stays meaningful
+command:
+  enforce_vocabulary: {const: true}         # vocabulary enforcement can NEVER be disabled
+network_flow:
+  mode: {allowed: [frozen]}                 # never permit batch-fit (it inverts under attack)
+# Physical safe envelope -- process-safety limits, set from the plant P&ID / alarm
+# setpoints, NEVER widened by software. TODO: confirm from the resumed machine.
+process_safety:
+  tank_pressure_kpa: {min: 1500, max: 3200}   # placeholder -- set to real alarm band

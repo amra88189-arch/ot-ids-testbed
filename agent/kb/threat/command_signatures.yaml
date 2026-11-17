@@ -1,0 +1,11 @@
+# command_signatures.yaml -- how to read a Layer-3 (network command) alert. The live
+# modbus_sniff detector flags any out-of-vocabulary Modbus write; these map the write to
+# what it means and which ATT&CK for ICS technique it is. Normal writer = PLC 192.168.95.2
+# only (WRITE_MULTIPLE_REGISTERS, reg 1); any other source/function/register is hostile.
+command_layer:
+  normal_writer: "192.168.95.2 (the PLC) via WRITE_MULTIPLE_REGISTERS to register 1 -- the only legitimate write"
+  rule: "any write from another source, or any other function/register, is out-of-vocabulary and flagged"
+signatures:
+  any_unauthorized_write: {attack: T0855, name: Unauthorized Command Message, meaning: "a write not in the frozen vocabulary"}
+  coil0_manual_mode:   {func: WRITE_SINGLE_COIL, register: 0, attack: T0858, name: Change Operating Mode, meaning: "engages MANUAL mode -- disables the control loops so an attacker can drive the plant"}
+  manual_setpoint_write: {func: WRITE_MULTIPLE_REGISTERS, registers: [10,11,12,13], attack: T0836, name: Modify Parameter, meaning: "writes manual feed/purge/product setpoints to move the process"}

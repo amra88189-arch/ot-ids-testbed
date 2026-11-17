@@ -1,0 +1,10 @@
+# mitigations.yaml -- ATT&CK for ICS mitigations (M-codes) relevant to OUR techniques,
+# so the agent recommends real controls, not generic advice. Verify descriptions vs STIX.
+mitigations:
+  M0807: {name: "Network Allowlists",        controls_for: [T0855, T0885, T0846], note: "allowlist (src,func,register) -- exactly our command-vocabulary layer"}
+  M0810: {name: "Out-of-Band Comms Channel",  controls_for: [T0858, T0831]}
+  M0800: {name: "Authorization Enforcement",   controls_for: [T0855, T0836, T0858], note: "Modbus has none -- the testbed's core weakness"}
+  M0802: {name: "Communication Authenticity",  controls_for: [T0855, T0856]}
+  M0813: {name: "Software Process & Device Authentication", controls_for: [T0855]}
+  M0814: {name: "Static Network Config",       controls_for: [T0846, T0842]}
+  M0815: {name: "Watchdog Timers",             controls_for: [T0831, T0814]}

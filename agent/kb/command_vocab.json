@@ -1,0 +1,10 @@
+{
+  "_note": "Frozen normal write vocabulary from a CLEAN-NORMAL run. Fill the full set from net_command_baseline.py on the resumed machine.",
+  "authorized_writes": [
+    {"src": "192.168.95.2", "src_role": "PLC", "func": "WRITE_MULTIPLE_REGISTERS", "register": 1}
+  ],
+  "known_attack_example": {
+    "src": "192.168.90.6", "src_role": "Kali", "func": "WRITE_MULTIPLE_COILS",
+    "register": 40, "value": "T", "flagged": "10/10", "false_positives": "0 of 4476 normal writes"
+  }
+}

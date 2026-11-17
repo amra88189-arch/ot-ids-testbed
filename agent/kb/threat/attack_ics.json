@@ -1,0 +1,15 @@
+{
+  "_note": "Seed of MITRE ATT&CK for ICS techniques referenced by technique_links. Replace/extend with the full STIX pull (mitreattack-python) per refresh.py's footer. IDs+names verified against ATT&CK for ICS.",
+  "techniques": {
+    "T0846": {"name": "Remote System Discovery", "tactic": "Discovery"},
+    "T0842": {"name": "Network Sniffing", "tactic": "Discovery"},
+    "T0840": {"name": "Network Connection Enumeration", "tactic": "Discovery"},
+    "T0855": {"name": "Unauthorized Command Message", "tactic": "Impair Process Control"},
+    "T0885": {"name": "Commonly Used Port", "tactic": "Command and Control"},
+    "T0858": {"name": "Change Operating Mode", "tactic": "Impair Process Control"},
+    "T0836": {"name": "Modify Parameter", "tactic": "Impair Process Control"},
+    "T0831": {"name": "Manipulation of Control", "tactic": "Impair Process Control"},
+    "T0814": {"name": "Denial of Service", "tactic": "Inhibit Response Function"},
+    "T0827": {"name": "Loss of Control", "tactic": "Impact"}
+  }
+}

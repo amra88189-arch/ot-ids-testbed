@@ -1,0 +1,112 @@
+# contrast_questions.yaml -- bare-model vs KB-grounded benchmark.
+# Each question has a `gold` (the correct fact, for the LLM-judge) and `expect_any`
+# (tokens, for the legacy keyword metric -- kept so we can show the keyword metric's bias).
+# Categories: plant_fact (numbers the model can't know), rationale (our specific evidence),
+# attack_ref (exact ATT&CK/mitigation), live_cve (post-cutoff threat intel).
+questions:
+  # ---------------- plant_fact ----------------
+  - id: band_pressure
+    category: plant_fact
+    q: "What is the frozen static-band pressure range for the reactor tank, and roughly where does the band actually fire?"
+    gold: "The pressure band is [2693, 2702] kPa; with the 3-sigma tolerance it fires around 2709 kPa."
+    expect_any: ["2693", "2702"]
+  - id: cusum_liquid
+    category: plant_fact
+    q: "What CUSUM alarm threshold does the pressure detector use, and why is CUSUM disabled on liquid_level?"
+    gold: "CUSUM h_sigma = 8; it is disabled on liquid_level because a tank level integrates, so its within-band wander is normal and would false-positive."
+    expect_any: ["8", "h_sigma"]
+  - id: window_150
+    category: plant_fact
+    q: "What detection window length does the v2 physics layer use, and what problem did that value fix?"
+    gold: "A 150-sample window; it fixed the product cycle/window aliasing (~60-70 s cycle vs a 60 s window) that caused EMD false positives."
+    expect_any: ["150", "alias", "cycle"]
+  - id: netflow_invert
+    category: plant_fact
+    q: "What AUC did the network-flow baseline get frozen vs batch-fit, and what does the gap mean?"
+    gold: "Frozen 0.973 vs batch-fit 0.154; the batch-fit baseline inverts under attack and effectively becomes the attack."
+    expect_any: ["0.973", "0.154"]
+  - id: varcollapse_ratio
+    category: plant_fact
+    q: "How does the detector decide a normally-cycling valve is stuck?"
+    gold: "Variance-collapse: it fires when the window's rolling standard deviation drops below 0.30x the frozen normal rolling sd."
+    expect_any: ["0.3", "varcollapse", "variance"]
+  - id: injection_result
+    category: plant_fact
+    q: "How well did the command layer detect the Modbus injection, and with how many false positives?"
+    gold: "10 of 10 injected writes flagged, with 0 false positives out of 4476 normal writes."
+    expect_any: ["10/10", "0 fp", "4476"]
+  - id: subtle_result
+    category: plant_fact
+    q: "On the subtle in-band pressure hold, how many times did the static band fire versus CUSUM?"
+    gold: "The static band fired 0 times; CUSUM fired 58 times on the +6 kPa in-band hold."
+    expect_any: ["band 0", "58", "cusum"]
+  - id: normal_writer
+    category: plant_fact
+    q: "In normal operation, which source is allowed to write to the PLC over Modbus, and how?"
+    gold: "Only 192.168.95.2 (the PLC) writes legitimately, via WRITE_MULTIPLE_REGISTERS to register 1; any other write is flagged."
+    expect_any: ["192.168.95.2", "write_multiple_registers", "register 1"]
+  # ---------------- rationale ----------------
+  - id: why_frozen
+    category: rationale
+    q: "Why freeze the detection baseline on clean-normal instead of fitting it on the incoming data?"
+    gold: "A baseline fit on incoming data inverts when attacks dominate (AUC 0.154 vs 0.973 frozen) and becomes the attack; freezing on clean-normal preserves separation."
+    expect_any: ["invert", "0.154", "0.973", "attack dominate"]
+  - id: why_temporal
+    category: rationale
+    q: "Why did random cross-validation overstate the detector, and what happened under a temporal split?"
+    gold: "Random CV shuffles time and leaks near-duplicate rows across folds; injection recall fell from 0.76 (random CV) to 0.00 (temporal split)."
+    expect_any: ["0.76", "0.00", "shuffl", "leak"]
+  - id: why_cusum
+    category: rationale
+    q: "Why does a static band miss a small sustained pressure bias, and what catches it on this plant?"
+    gold: "A static band only fires outside its range, so a small in-band bias is invisible; CUSUM integrates the sustained deviation and catches it (band 0, CUSUM 58)."
+    expect_any: ["cusum", "band 0", "58", "within", "integrat"]
+  - id: why_device_nature
+    category: rationale
+    q: "Why use different detectors for steady versus cycling signals?"
+    gold: "Steady signals use a value band + CUSUM; cycling signals use variance-collapse + EMD, because a static band floods on a normally-cycling valve that swings across its whole range."
+    expect_any: ["cycling", "variance", "band floods", "steady"]
+  - id: why_prevention_detection
+    category: rationale
+    q: "If the command firewall blocks unauthorized writes, why keep the physics IDS?"
+    gold: "The firewall only sees the PLC command path; the physics IDS catches a compromised legitimate source, a field-direct write, or a physical fault that the command layer can't see."
+    expect_any: ["compromised", "field", "fault", "physics catches"]
+  # ---------------- attack_ref ----------------
+  - id: attack_injection
+    category: attack_ref
+    q: "Which MITRE ATT&CK for ICS technique is the Modbus command injection, and which detection layer caught it?"
+    gold: "T0855 Unauthorized Command Message, caught by the command-vocabulary layer."
+    expect_any: ["T0855", "command", "vocabulary"]
+  - id: attack_takeover
+    category: attack_ref
+    q: "Map the manual-mode takeover to its MITRE ATT&CK for ICS techniques."
+    gold: "T0858 Change Operating Mode, T0836 Modify Parameter, and T0831 Manipulation of Control."
+    expect_any: ["T0858", "T0836", "T0831"]
+  - id: attack_mitigation
+    category: attack_ref
+    q: "What ATT&CK mitigation corresponds to the command-vocabulary allowlist, and why can't Modbus enforce it natively?"
+    gold: "M0807 Network Allowlists (or M0800 Authorization Enforcement); Modbus has no authentication, so it cannot enforce it natively."
+    expect_any: ["M0807", "M0800", "no auth", "authorization"]
+  - id: attack_scan
+    category: attack_ref
+    q: "Which ATT&CK for ICS technique does the reconnaissance network scan map to?"
+    gold: "T0846 Remote System Discovery."
+    expect_any: ["T0846", "remote system discovery"]
+  - id: coil0_technique
+    category: attack_ref
+    q: "An attacker writes Modbus coil 0. What does that do and which ATT&CK technique is it?"
+    gold: "Writing coil 0 engages MANUAL mode (disabling the control loops) = T0858 Change Operating Mode."
+    expect_any: ["T0858", "manual mode", "change operating mode"]
+  # ---------------- live_cve ----------------
+  - id: cve_openplc
+    category: live_cve
+    q: "Is there a CISA KEV (actively-exploited) CVE affecting OpenPLC or its ScadaBR HMI right now?"
+    gold: "Yes: CVE-2021-26829, a cross-site scripting vulnerability in OpenPLC's ScadaBR, listed in CISA KEV."
+    expect_any: ["CVE-2021-26829", "scadabr", "CVE-"]
+  - id: cve_newest
+    category: live_cve
+    q: "What is the most recently added CVE in the asset-filtered threat feed?"
+    gold: "CVE-2021-26829 (OpenPLC/ScadaBR), the entry in the asset-filtered CISA KEV feed."
+    expect_any: ["CVE-2021-26829", "CVE-", "dateAdded"]
+scoring:
+  note: "LLM-judge grades each answer CORRECT/INCORRECT against `gold` (paraphrase ok, hallucination not). Keyword metric (expect_any) kept for contrast -- it over-credits hallucinated/generic 'hits', which the judge should expose."

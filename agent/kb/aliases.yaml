@@ -1,0 +1,19 @@
+# aliases.yaml — natural-language phrasings -> canonical fact key. Sharpens the
+# deterministic router where config terms differ from how an operator asks.
+# (The real agent's LLM does this routing natively; this is the fast fallback.)
+"attack_map.map.sustained_drift.result":
+  ["frozen envelope auc on the drift", "physics layer auc", "drift detection auc"]
+"attack_map.map.sustained_drift.layer":
+  ["which layer catches the sustained drift"]
+"attack_map.map.modbus_injection.layer":
+  ["which layer catches the modbus injection", "injection detected by"]
+"attack_map.map.recon_scan.layer":
+  ["which layer catches the scan"]
+"attack_map.map.resource_load.layer":
+  ["which layer catches the resource load"]
+"attack_map.notes.fusion_injection_recall_temporal":
+  ["injection recall under the temporal split", "novel attack recall deployed"]
+"attack_map.notes.ton_iot_transfer_fpr":
+  ["ton_iot transfer false positive rate benchmark flood"]
+"command_vocab.authorized_writes[0].register":
+  ["who is authorized to write which register", "normal write register"]

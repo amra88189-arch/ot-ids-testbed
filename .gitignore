@@ -1,31 +1,13 @@
-# data & heavy artefacts — not published (recorded plant data, intermediates)
-csv/
-csv_session/
-csv_drift/
-csv_hostload/
-results/
-intermediate/
-*.pcap
-*.jsonl
-
-# run logs / scratch
-convert_report.txt
-session_report.txt
-results_full.log
-ping.txt
-_check.txt
-*.log
-
-# python
 __pycache__/
 *.pyc
-
-# coupled to the private CATF-IDS pipeline (paper in prep) — kept out of the public repo
-lab_eval.py
-lab_full.py
-lab_temporal.py
-lab_memory.py
-lab_transfer.py
-lab_net_baseline.py
-phys_integration.md
-lab_eval_report.json
+*.log
+alerts.jsonl
+alerts_live.jsonl
+command_writes.jsonl
+state.json
+contrast_results_*.json
+*.pcap
+device/
+pcap/
+# keep baselines.json (it's the frozen reference), ignore local re-freezes:
+baselines.local.json

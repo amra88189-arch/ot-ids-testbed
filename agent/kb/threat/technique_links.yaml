@@ -1,0 +1,53 @@
+links:
+  recon_scan:
+    attack:
+    - T0846
+    - T0842
+    - T0840
+    tactic: Discovery
+    our_layer: network_flow
+    our_result: AUC 0.98
+    attack_named:
+    - T0846 Remote System Discovery
+    - T0842 Network Sniffing
+    - T0840 Network Connection Enumeration
+  modbus_injection:
+    attack:
+    - T0855
+    - T0885
+    tactic: Impair Process Control
+    our_layer: command
+    our_result: 10/10 flagged, 0 FP of 4476 normal writes
+    attack_named:
+    - T0855 Unauthorized Command Message
+    - T0885 Commonly Used Port
+  manual_takeover:
+    attack:
+    - T0858
+    - T0836
+    - T0831
+    tactic: Impair Process Control
+    our_layer: physics
+    our_result: 98% detected, 0% FP, AUC 0.995 (loud takeover up to 3200 kPa)
+    attack_named:
+    - T0858 Change Operating Mode
+    - T0836 Modify Parameter
+    - T0831 Manipulation of Control
+  subtle_inband_hold:
+    attack:
+    - T0831
+    - T0836
+    tactic: Impair Process Control
+    our_layer: physics (CUSUM)
+    our_result: band 0, CUSUM 58 over a +6 kPa in-band hold (coil-0 verified)
+    attack_named:
+    - T0831 Manipulation of Control
+    - T0836 Modify Parameter
+  resource_load:
+    attack:
+    - T0814
+    tactic: Inhibit Response Function
+    our_layer: host
+    our_result: AUC 0.999
+    attack_named:
+    - T0814 Denial of Service

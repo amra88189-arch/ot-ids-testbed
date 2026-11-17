@@ -1,0 +1,28 @@
+# asset_watch.yaml -- the plant's asset inventory. refresh.py keeps only CVEs/advisories
+# that touch these vendors/products/protocols, so the feed stays relevant (not the whole
+# internet's vulnerabilities). Add real part numbers as the testbed is documented.
+site: GRFICSv3 chemical-process testbed (Tennessee-Eastman-style)
+assets:
+  - id: openplc
+    role: soft-PLC runtime
+    vendor: OpenPLC
+    product: OpenPLC_v3
+    keywords: [openplc, "open plc"]
+  - id: modbus
+    role: control protocol
+    vendor: generic
+    product: Modbus/TCP
+    port: 502
+    keywords: [modbus]
+  - id: field_io
+    role: remote I/O / field devices
+    vendor: generic
+    product: Modbus TCP remote I/O
+    keywords: [modbus, "remote i/o", rtu]
+  - id: hmi
+    role: operator HMI (web)
+    vendor: GRFICS
+    product: ScadaBR / web HMI
+    keywords: [scadabr, hmi]
+# Note: GRFICS is a simulation; these map to the REAL products it emulates, which is the
+# point -- the agent reasons about OpenPLC/Modbus CVEs that would matter in deployment.

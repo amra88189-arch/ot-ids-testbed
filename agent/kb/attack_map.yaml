@@ -1,0 +1,15 @@
+# attack_map.yaml — which layer catches which attack class (detection-in-depth).
+map:
+  recon_scan:       {layer: network_flow, result: "AUC 0.98",                     attack_ref: [T0846, T0842]}
+  modbus_injection: {layer: command,      result: "10/10 flagged, 0 FP of 4476",  attack_ref: [T0855, T0885]}
+  sustained_drift:  {layer: physics,      result: "AUC 0.97, fires in 139 s; phys_delta 0.31", attack_ref: [T0827]}  # fault, Impact-class signature
+  resource_load:    {layer: host,         result: "AUC 0.999",                     attack_ref: [T0814]}
+  manual_takeover:  {layer: physics,      result: "98% detected, 0% FP, AUC 0.995", attack_ref: [T0858, T0836, T0831]}
+  subtle_inband_hold: {layer: physics,    result: "band 0, CUSUM 58 (+6 kPa in-band, coil-0 verified)", attack_ref: [T0831, T0836]}
+
+notes:
+  fusion_injection_recall_temporal: 0.00   # supervised fusion MISSES the novel injection
+  fusion_injection_recall_cv: 0.76
+  ton_iot_transfer_fpr: 0.99               # benchmark-trained detector floods at the plant
+  netflow_frozen_auc: 0.973                # frozen network-flow baseline
+  netflow_batchfit_auc: 0.154              # batch-fit INVERTS under attack (becomes the attack)

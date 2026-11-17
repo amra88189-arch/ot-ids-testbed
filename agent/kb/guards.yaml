@@ -1,0 +1,37 @@
+# guards.yaml -- the FROZEN detection thresholds (the deployed v2 baseline, serialized).
+# The ONLY file the agent proposes changes to; every change is a git diff a human
+# commits. Bounds it may never cross live in hard_limits.yaml. Declared, approved
+# intent moves these; observed data drift never does.
+#
+# Synced to the deployed v2 multi-detector physics layer (ids2/ids.py + baselines.json):
+#   steady  signals -> static value band (fire_sigma) + CUSUM (slow sustained bias)
+#   cycling signals -> variance-collapse (stuck) + EMD (distribution shift)
+physics:
+  nature_cv_threshold: 0.3   # CV < 0.3 steady (value band); > 0.3 cycling (variance/EMD)
+  window: 150                # samples per detection window (spans >=2 cycles of the
+                             #   slowest cycling signal; was 60 in v1 -- aliased the
+                             #   ~65 s product cycle, causing EMD false positives)
+  # --- steady-signal detectors ---
+  fire_sigma: 3.0            # value-band excursion fires at 3*sd
+  steady_tol_frac: 0.01      # near-constant steady signal (sd~0): fire on
+                             #   |x - normal| > max(fire_sigma*sd, steady_tol_frac*|normal|)
+  cusum:
+    k_sigma: 0.5             # CUSUM slack = 0.5*sd (ignores drift below this)
+    h_sigma: 8              # CUSUM alarm threshold = 8*sd; edge-triggered (resets on fire)
+    # per-signal opt-out: CUSUM disabled on integrating signals whose within-band
+    # wander is normal. Deployed opt-outs: liquid_level (tank level integrates).
+  # --- cycling-signal detectors ---
+  varcollapse_ratio: 0.30    # flag a stuck/pinned cycling valve when the window rolling-sd
+                             #   drops below 0.30 * the frozen normal rolling-sd
+  emd:
+    k_sigma: 4               # (fallback) Gaussian EMD threshold = mean + 4*sd of clean dist
+    nq: 40                   # quantiles for the 1-D Wasserstein (EMD) distance
+    margin: 1.3              # PRIMARY: fire when window-distance > 1.3 * the empirical
+                             #   clean ceiling (max clean window-distance). Robust to the
+                             #   bounded, skewed distance distribution; replaced mean+k*sd.
+network_flow:
+  mode: frozen               # frozen | batch  (batch-fit INVERTS under attack: 0.154 vs 0.973)
+host:
+  mode: frozen
+command:
+  enforce_vocabulary: true   # flag any write outside the frozen (src,func,register) vocabulary
