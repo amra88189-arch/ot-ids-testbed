@@ -1,0 +1,223 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CATF-IDS Operator Console</title>
+<style>
+:root{--bg:#000;--ink:#fff;--muted:#b3b3b3;--rule:#4d4d4d;--paper:#fff;--pink:#000;
+--pmuted:#4d4d4d;--prule:#b3b3b3;--high:#ff3b30;--l2:#8f8f8f;--ip:#4cc9f0;--cve:#ffb020;--tech:#c4a5ff;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Archivo",Arial,sans-serif}
+.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+header{display:flex;align-items:center;gap:24px;padding:16px 32px;border-bottom:4px solid var(--ink)}
+.wm{font-weight:900;letter-spacing:-.03em;text-transform:uppercase;font-size:20px}
+nav{display:flex;gap:4px}
+nav a{padding:8px 14px;color:var(--ink);text-decoration:none;font-weight:800;text-transform:uppercase;
+font-size:12px;letter-spacing:.04em;border:2px solid transparent;cursor:pointer}
+nav a.on{background:var(--ink);color:#000}
+.badge{margin-left:auto;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.badge.manual{background:var(--high);color:#000;padding:6px 10px;font-weight:800;letter-spacing:.06em}
+main{padding:32px;max-width:1440px}
+.lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+section{display:none}section.on{display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.frame{border:4px solid var(--ink);padding:20px}
+.mode{padding:20px;border:4px solid var(--ink)}
+.mode.manual{background:var(--high);color:#000;border-color:var(--high)}
+.big{font-size:84px;font-weight:900;line-height:1;letter-spacing:-.04em;margin:8px 0}
+.mode.manual .lab{color:#000}
+.counters{display:flex;gap:28px;align-items:baseline;flex-wrap:wrap}
+.cnt{font-size:34px;font-weight:900}.cnt.hi{color:var(--high)}
+.tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.04em;padding:2px 7px}
+.l3{background:var(--ink);color:#000}.l2{background:var(--l2);color:#000}.l1{border:2px solid var(--ink)}
+.sev-high{background:var(--high);color:#000;padding:2px 7px;font-weight:800}
+.sev-med{border:2px solid var(--ink);padding:2px 7px;font-weight:800}
+.filters{display:flex;gap:4px;margin:24px 0 8px}
+.filters button{background:none;border:2px solid var(--ink);color:var(--ink);padding:8px 12px;
+font-family:inherit;font-weight:800;text-transform:uppercase;font-size:11px;letter-spacing:.04em;cursor:pointer}
+.filters button.on{background:var(--ink);color:#000}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+padding:8px;border-bottom:2px solid var(--ink)}
+td{padding:10px 8px;border-bottom:1px solid var(--rule);font-size:13px}
+tr.hi-row{animation:pulse 1s ease-out 1}
+@keyframes pulse{from{background:#2a0000}to{background:transparent}}
+.ip{color:var(--ip)}.cve{color:var(--cve)}.tech{color:var(--tech)}
+.ct{color:var(--muted);font-size:11px;border:2px solid var(--rule);padding:1px 6px;margin-left:6px}
+/* agent panel = white paper */
+.paper{background:var(--paper);color:var(--pink);padding:24px;border:4px solid var(--ink)}
+.msg{border-bottom:1px solid var(--prule);padding:16px 0}
+.trace{background:#000;color:#fff;padding:12px;font-size:12px;margin-bottom:12px}
+.trace div{white-space:pre-wrap}
+.prose{font-size:16px;line-height:1.5;font-weight:500}
+.chips{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid #000;padding:4px 8px;font-size:12px;font-weight:700}
+.ask{display:flex;gap:8px;margin-top:16px}
+.ask input{flex:1;padding:12px;background:#000;color:#fff;border:2px solid var(--ink);font-family:"JetBrains Mono",monospace;font-size:14px}
+button.go{padding:12px 20px;background:var(--ink);color:#000;border:none;font-weight:800;text-transform:uppercase;cursor:pointer}
+.diff{background:#000;color:#fff;padding:12px;white-space:pre-wrap;font-size:12px}
+.verdict.valid{background:var(--ink);color:#000;padding:10px;font-weight:800;display:inline-block}
+.verdict.invalid{background:var(--high);color:#000;padding:10px;font-weight:800;display:inline-block}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:24px 0}
+.tile{border:2px solid var(--ink);padding:12px}
+.tile.high{background:var(--high);color:#000;border-color:var(--high)}
+.tile .dv{font-size:26px;font-weight:900;font-family:"JetBrains Mono",ui-monospace,monospace;margin:4px 0}
+.tile .sg{font-size:11px;color:var(--muted)}.tile.high .sg,.tile.high .lab{color:#000}
+.quiet{padding:40px;text-align:center;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+input,select{font-family:"JetBrains Mono",monospace}
+</style></head><body>
+<header>
+  <div class="wm">CATF-IDS</div>
+  <nav>
+    <a data-v="live" class="on">Live</a><a data-v="agent">Agent</a><a data-v="guards">Guards</a>
+  </nav>
+  <div class="badge" id="badge">local · Qwen2.5 · air-gapped</div>
+</header>
+<main>
+  <!-- LIVE -->
+  <section id="live" class="on">
+    <div class="grid">
+      <div class="mode" id="modeBlk"><div class="lab">Mode · normal is AUTO</div><div class="big mono" id="modeWord">AUTO</div><div class="lab mono" id="modeWho"></div></div>
+      <div class="frame"><div class="lab">Reactor pressure</div><div class="big mono" id="presVal">—</div><div class="lab mono">band [2693, 2702] · normal ~2698</div></div>
+    </div>
+    <div class="counters frame">
+      <div><span class="cnt hi mono" id="cHigh">00</span> <span class="lab">High</span></div>
+      <div><span class="cnt mono" id="cMed">00</span> <span class="lab">Medium</span></div>
+      <div class="lab mono">last 10 min &nbsp; L3 <span id="cL3">0</span> · L2 <span id="cL2">0</span> · L1 <span id="cL1">0</span></div>
+    </div>
+    <div class="lab" style="margin-top:8px">Process devices (live)</div>
+    <div class="tiles" id="tiles"></div>
+    <div class="filters">
+      <button data-f="all" class="on">All layers</button><button data-f="L3">L3 command</button>
+      <button data-f="L2">L2 control</button><button data-f="L1">L1 safety</button><button data-f="high">High only</button>
+    </div>
+    <table><thead><tr><th>Time</th><th>Layer</th><th>Source / signal</th><th>Detector</th><th>Value</th><th>Evidence</th><th>Sev</th></tr></thead>
+    <tbody id="feed"></tbody></table>
+    <div class="quiet" id="quiet" style="display:none">No alerts. All signals inside their frozen bands.</div>
+  </section>
+  <!-- AGENT -->
+  <section id="agent">
+    <div class="paper">
+      <div class="lab" style="color:var(--pmuted)">Operator agent · reads the live bus and the KB</div>
+      <div id="chat">
+<div class="msg"><div class="lab" style="color:var(--pmuted)">analyst</div>
+<div class="prose">what is firing right now, and what does it mean?</div>
+<div class="trace">&rarr; read_alerts({"since_minutes":10})
+&rarr; explain_alert({"detector":"command"})</div>
+<div class="prose">An attacker at 192.168.90.6 wrote Modbus coil 0 to engage MANUAL mode (T0858 Change Operating Mode), then setpoint register 12 (T0836 Modify Parameter), and is holding reactor pressure at 2704 kPa &mdash; inside the static band, but a sustained bias CUSUM caught (58 fires, band 0). The pinned purge/product valves also tripped variance-collapse. This is a manual-mode manipulation; isolate 192.168.90.6 and revert the PLC to AUTO.</div>
+<div class="chips"><span class="chip mono">T0858</span><span class="chip mono">T0836</span><span class="chip mono">2704.0</span><span class="chip mono">[2693, 2702]</span><span class="chip mono">192.168.90.6</span><span class="chip mono">CUSUM 58</span></div></div>
+</div>
+      <div class="ask"><input id="q" placeholder="ask e.g. what is firing right now and what does it mean?"><button class="go" onclick="askAgent()">Ask</button></div>
+    </div>
+  </section>
+  <!-- GUARDS -->
+  <section id="guards">
+    <div class="frame">
+      <div class="lab">Propose a detection-threshold change (validated against immutable hard limits)</div>
+      <div class="ask">
+        <input id="gp" placeholder="param e.g. physics.cusum.h_sigma" style="flex:2">
+        <input id="gv" placeholder="new value" style="flex:1">
+      </div>
+      <div class="ask"><input id="gr" placeholder="rationale"><button class="go" onclick="propose()">Propose</button></div>
+      <div id="gout" style="margin-top:20px"></div>
+    </div>
+  </section>
+</main>
+<script>
+const API=""; let FILTER="all";
+const layerOf={command:"L3",band:"L1",cusum:"L1",varcollapse:"L2",emd:"L2"};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function tagHTML(l){return `<span class="tag ${l.toLowerCase()}">${l}</span>`;}
+function hms(ts){return new Date(ts*1000).toISOString().substr(11,8);}
+function ipspan(s){return `<span class="ip mono">${esc(s)}</span>`;}
+function nav(v){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+ document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===v));
+ document.getElementById('badge').className='badge'+(v==='live'?'':'');}
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>nav(a.dataset.v));
+document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;
+ document.querySelectorAll('.filters button').forEach(x=>x.classList.toggle('on',x===b));refresh();});
+
+const T=1794692700;
+const DEMO_ST={mode:"MANUAL",pressure:{value:2704.0,band:[2693,2702],normal:2698},
+ counters:{high:3,med:1164,L3:3,L2:1046,L1:118},
+ tiles:[{device:"tank",signal:"pressure",value:2704.0,band:[2693,2702],nature:"steady",sev:"med"},
+ {device:"feed1",signal:"f1_flow",value:640.46,band:[640.5,640.5],nature:"steady",sev:"ok"},
+ {device:"feed2",signal:"f2_flow",value:0.0,band:[0,3.3],nature:"idle",sev:"ok"},
+ {device:"product",signal:"product_flow",value:50.47,band:[8,213],nature:"cycling",sev:"med"},
+ {device:"purge",signal:"purge_flow",value:426.0,band:[0,1794],nature:"cycling",sev:"med"},
+ {device:"analyzer",signal:"A_in_purge",value:0.48,band:[0.47,0.51],nature:"muted",sev:"ok"}]};
+const DEMO_AL=[
+ {ts:T+21,det:"command",device:"plc",src:"192.168.90.6",func:"WRITE_SINGLE_COIL",register:0,value:65280,count:1,first_ts:T+0,sev:"high"},
+ {ts:T+20,det:"command",device:"plc",src:"192.168.90.6",func:"WRITE_MULTIPLE_REGISTERS",register:12,value:2,count:191,first_ts:T+0,sev:"high"},
+ {ts:T+19,det:"cusum",device:"tank",signal:"pressure",value:2704.0,cusum:27.9,sev:"med"},
+ {ts:T+18,det:"band",device:"tank",signal:"liquid_level",value:44.4,z:4.5,sev:"med"},
+ {ts:T+17,det:"varcollapse",device:"purge",signal:"purge_valve_pos",value:0.0,rollstd:0.0,norm:34.68,sev:"high"},
+ {ts:T+16,det:"emd",device:"product",signal:"product_flow",value:50.47,emd:38.52,sev:"med"},
+ {ts:T+15,det:"emd",device:"purge",signal:"purge_flow",value:426.0,emd:243.1,sev:"med"}];
+function refresh(){
+ let st=DEMO_ST,al=DEMO_AL;
+ // mode
+ const mb=document.getElementById('modeBlk');mb.className='mode'+(st.mode==='MANUAL'?' manual':'');
+ document.getElementById('modeWord').textContent=st.mode;
+ // pressure
+ document.getElementById('presVal').textContent = st.pressure.value!=null? st.pressure.value.toFixed(1):'~2698';
+ // counters
+ document.getElementById('cHigh').textContent=String(st.counters.high).padStart(2,'0');
+ document.getElementById('cMed').textContent=String(st.counters.med).padStart(2,'0');
+ document.getElementById('cL3').textContent=st.counters.L3;document.getElementById('cL2').textContent=st.counters.L2;document.getElementById('cL1').textContent=st.counters.L1;
+ // device tiles (live PLC panel)
+ document.getElementById('tiles').innerHTML=(st.tiles||[]).map(t=>{
+   const cls=t.sev==='high'?'tile high':'tile';
+   const val=t.value!=null?(+t.value).toFixed(Math.abs(+t.value)>=100?0:2):'—';
+   const tag=t.sev==='high'?'<span class="sev-high">HIGH</span>':t.sev==='med'?'<span class="sev-med">MED</span>':`<span class="lab">${esc(t.nature)}</span>`;
+   return `<div class="${cls}"><div class="lab">${esc(t.device)}</div><div class="dv">${val}</div>
+     <div class="sg mono">${esc(t.signal)} · [${t.band[0]}, ${t.band[1]}]</div><div style="margin-top:6px">${tag}</div></div>`;
+ }).join('');
+ // feed
+ let rows=al.filter(a=>{const L=layerOf[a.det];
+   if(FILTER==='high')return a.sev==='high'; if(FILTER==='all')return true; return L===FILTER;});
+ const feed=document.getElementById('feed');
+ document.getElementById('quiet').style.display=rows.length?'none':'block';
+ feed.innerHTML=rows.map(a=>{const L=layerOf[a.det]||'?';
+   const srcsig = a.det==='command'? `${ipspan(a.src)} <span class="mono">${esc(a.func)} · reg ${a.register}</span>`
+                                    : `<span class="mono">${esc(a.device)}/${esc(a.signal)}</span>`;
+   const ev = a.det==='command'? (a.count>1?`<span class="ct">×${a.count} since ${hms(a.first_ts)}</span>`:'')
+     : a.det==='cusum'?`cusum ${a.cusum}`:a.det==='band'?`${a.z}σ`:a.det==='varcollapse'?`rollstd ${a.rollstd}/${a.norm}`:a.det==='emd'?`emd ${a.emd}`:'';
+   const sev = a.sev==='high'?'<span class="sev-high">HIGH</span>':'<span class="sev-med">MED</span>';
+   return `<tr class="${a.sev==='high'?'hi-row':''}"><td class="mono">${hms(a.ts)}</td><td>${tagHTML(L)}</td>
+   <td>${srcsig}</td><td class="mono">${esc(a.det)}</td><td class="mono">${a.value??''}</td><td class="mono">${ev}</td><td>${sev}</td></tr>`;
+ }).join('');
+}
+refresh();
+
+// ---- agent ----
+async function askAgent(){
+ const q=document.getElementById('q').value.trim();if(!q)return;document.getElementById('q').value='';
+ const chat=document.getElementById('chat');
+ const id='m'+Date.now();
+ chat.insertAdjacentHTML('beforeend',`<div class="msg" id="${id}"><div class="lab" style="color:var(--pmuted)">you</div>
+   <div class="prose">${esc(q)}</div><div class="trace" id="${id}t">running…</div></div>`);
+ chat.scrollTop=chat.scrollHeight;
+ let r;try{r=await (await fetch(API+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})})).json();}
+ catch(e){document.getElementById(id+'t').textContent='backend error: '+e;return;}
+ const trace=(r.tool_calls||[]).map(c=>`→ ${c.name}(${JSON.stringify(c.args)})`).join('\n')||'(no tool calls)';
+ const chips=(r.chips||[]).slice(0,8).map(c=>`<span class="chip mono">${esc(c.value)}</span>`).join('');
+ document.getElementById(id).innerHTML=`<div class="lab" style="color:var(--pmuted)">you</div><div class="prose">${esc(q)}</div>
+   <div class="trace">${esc(trace)}</div><div class="prose">${esc(r.answer)}</div><div class="chips">${chips}</div>`;
+ chat.scrollTop=chat.scrollHeight;
+}
+// ---- guards ----
+async function propose(){
+ const param=document.getElementById('gp').value.trim(),value=document.getElementById('gv').value.trim(),rationale=document.getElementById('gr').value.trim();
+ let v=isNaN(Number(value))?value:Number(value);
+ let r;try{r=await (await fetch(API+'/api/propose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({param,value:v,rationale})})).json();}
+ catch(e){return;}
+ const out=document.getElementById('gout');
+ const valid = (r.validation||'').startsWith('VALID');
+ const vb = valid?`<span class="verdict valid">VALID</span>`:`<span class="verdict invalid">${esc(r.validation||'INVALID')}</span>`;
+ out.innerHTML=`<div class="diff">${esc(r.diff||r.raw||'')}</div><div style="margin:12px 0">${vb}</div>`+
+   (valid?`<button class="go" onclick='approve(${JSON.stringify(param)},${JSON.stringify(v)})'>Approve &amp; commit</button>`:'');
+}
+async function approve(param,value){
+ const r=await (await fetch(API+'/api/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({param,value})})).json();
+ document.getElementById('gout').insertAdjacentHTML('beforeend',`<div class="lab" style="margin-top:12px">${esc(r.result)}</div>`);
+}
+</script></body></html>

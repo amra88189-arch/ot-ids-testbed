@@ -13,6 +13,10 @@ mislead, not hide them.
 > then let a local, read-only agent explain the alerts in the language of MITRE ATT&CK for
 > ICS and live CVEs.
 
+![CATF-IDS operator console — live view during a manual-mode attack: MODE flipped to MANUAL, reactor pressure held at 2704 kPa, per-layer counters, and the live process-device panel](docs/img/console-live.png)
+
+*The operator console during a live subtle-attack: the attacker has flipped the PLC to MANUAL and is holding pressure at 2704 kPa (inside the band) — caught across layers and shown in real time. (`docs/console_demo.html` is a standalone, backend-free preview of this view.)*
+
 ---
 
 ## Why this exists
@@ -83,6 +87,10 @@ propose-only on config** — a threshold change is emitted as a validated `git` 
 human to approve, rejected if it crosses an immutable hard-limit. A single-page **operator
 console** (`agent/console.html` + `agent/serve_console.py`) tails the live bus, shows the
 four layers and the live PLC panel, and runs the agent with its tool-trace and fact-chips.
+
+![The agent explaining a live alert — tool-call trace, grounded prose, and fact-chips](docs/img/console-agent.png)
+
+*The agent, asked "what is firing right now?", traces its tool calls (`read_alerts → explain_alert`), answers grounded, and shows the exact KB facts it used as chips — read-only, never in the detection loop.*
 
 ## Repository layout
 
